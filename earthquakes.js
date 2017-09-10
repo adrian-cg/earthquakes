@@ -1,14 +1,54 @@
-// Controller for making Geonames data
+// Controller for Geonames data
 var geoNamesController = (function() {
+  const baseUrl = 'http://api.geonames.org/earthquakesJSON';
+  const username = 'adriancg';
   
+  function buildUrl(bounds) {
+    var north = '?north=' + bounds.north;
+    var south = '&south=' + bounds.south;
+    var east = '&east=' + bounds.east;
+    var west = '&west=' + bounds.west;
+    var uname = '&username=' + username;
+    var fullUrl = baseUrl + north + south + east + west + uname;
+    
+    return fullUrl;
+  }
+  
+  function queryEarthquakes(url) {
+    
+    return new Promise(function(resolve, reject){
+      var xhttp = new XMLHttpRequest();
+      xhttp.open('GET', url, true);
+      xhttp.onload = function() {
+        if(xhttp.status === 200){
+          resolve(JSON.parse(xhttp.response));
+        } else {
+          reject(xttp.statusText);
+        }
+      };
+      
+      xhttp.onerror = function() {
+        reject('External service communication error.');
+      };
+            
+      xhttp.send();
+    });
+    
+  }
+  
+  return {
+    getEarthquakes: function(bounds) {
+      var url = buildUrl(bounds);
+      return queryEarthquakes(url);  
+    }
+  };
 })();
 
 
 // Controller for Map Object
 var mapController = (function() {
   var map;
-  var autocomplete;
-  
+  var autocomplete;  
   
   //Public Functions
   return {
@@ -17,6 +57,7 @@ var mapController = (function() {
     },
 
     initAutocomplete: function(element, callback) {
+      map.controls[google.maps.ControlPosition.TOP_LEFT].push(element);
       autocomplete = new google.maps.places.Autocomplete(element);
       autocomplete.bindTo('bounds', map);
       autocomplete.addListener('place_changed', callback);
@@ -24,6 +65,16 @@ var mapController = (function() {
     
     getPlace: function() {
       return autocomplete.getPlace();
+    },
+    getBounds: function() {
+      var bounds = map.getBounds();
+      return {
+        north: bounds.f.f,
+        south: bounds.f.b,
+        east: bounds.b.f,
+        west: bounds.b.b
+      }
+      
     },
     
     setView: function(place) {
@@ -53,15 +104,28 @@ var mapController = (function() {
 // Application Controller
 var appController = (function(geoNamesCtrl, mapCtrl) {
   
-  function place_changed() {
+  function placeChanged() {
     var place = mapCtrl.getPlace();
     var error = mapCtrl.setView(place);
     
-    if( error === 0) {
+    if( error !== -1) {
       // Code for getting earthquake data
-      console.log("Get earthquake data");
+      var earthquakes = geoNamesCtrl.getEarthquakes(mapCtrl.getBounds());
+      earthquakes.then(processEarthquakes).catch(function(error){
+        window.alert(error);
+      });
     }
-  }
+  };
+  
+  function processEarthquakes(earthquakeData) {
+    console.log(earthquakeData);
+    var earthquakeArray = earthquakeData.earthquakes;
+    if(earthquakeArray.length > 0){
+      console.log("Plot earthquakes")
+    } else {
+      window.alert('No earthquakes found for the location.');
+    }
+  };
   
   //Public Functions
   return {
@@ -74,8 +138,7 @@ var appController = (function(geoNamesCtrl, mapCtrl) {
       });
       
       // Initialize autocomplete object
-      mapCtrl.initAutocomplete(document.getElementById('pac-input'), place_changed);
-      
+      mapCtrl.initAutocomplete(document.getElementById('pac-input'), placeChanged);      
       
     }
   };

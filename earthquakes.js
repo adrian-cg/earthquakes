@@ -50,6 +50,14 @@ var mapController = (function() {
   var map;
   var autocomplete;
   
+  function getElements() {
+    return {
+      map: document.getElementById('map'),
+      autocomplete: document.getElementById('pac-input')
+    };
+  }
+  
+  // Only allow the public init function to set center and zoom.
   function strongParams(params) {
     var center = params.center || {lat: -34.397, lng: 150.644};
     var zoom = params.zoom || 8;
@@ -62,15 +70,16 @@ var mapController = (function() {
   
   //Public Functions
   return {
-    initMap: function(element, params) {
+    init: function(callback, params) {
       var safeParams = strongParams(params);
-      console.log(safeParams);
-      map = new google.maps.Map(element, safeParams);
-    },
-
-    initAutocomplete: function(element, callback) {
-      map.controls[google.maps.ControlPosition.TOP_LEFT].push(element);
-      autocomplete = new google.maps.places.Autocomplete(element);
+      var elems = getElements();
+      
+      // Initialize map Object
+      map = new google.maps.Map(elems.map, safeParams);
+      
+      // Initialize Autocomplete
+      map.controls[google.maps.ControlPosition.TOP_LEFT].push(elems.autocomplete);
+      autocomplete = new google.maps.places.Autocomplete(elems.autocomplete);
       autocomplete.bindTo('bounds', map);
       autocomplete.addListener('place_changed', callback);
     },
@@ -89,7 +98,9 @@ var mapController = (function() {
       
     },
     
-    setView: function(place) {
+    changePlace: function() {
+      
+      var place = autocomplete.getPlace();
       
       if (!place.geometry) {
         // User entered the name of a Place that was not suggested and
@@ -116,20 +127,25 @@ var mapController = (function() {
 // Application Controller
 var appController = (function(geoNamesCtrl, mapCtrl) {
   
+  // Function that will run when a new location is entered
   function placeChanged() {
-    var place = mapCtrl.getPlace();
-    var error = mapCtrl.setView(place);
     
-    if( error !== -1) {
-      // Code for getting earthquake data
+    var retCode = mapCtrl.changePlace();
+    
+    if( retCode !== -1) {
+      // Make Webservice call and get Promise object
       var earthquakes = geoNamesCtrl.getEarthquakes(mapCtrl.getBounds());
+      
       earthquakes.then(processEarthquakes).catch(function(error){
         window.alert(error);
       });
     }
-  };
+    
+  }
   
+  // Process Earthquake data once retrieved.
   function processEarthquakes(earthquakeData) {
+    
     console.log(earthquakeData);
     var earthquakeArray = earthquakeData.earthquakes;
     if(earthquakeArray.length > 0){
@@ -137,20 +153,18 @@ var appController = (function(geoNamesCtrl, mapCtrl) {
     } else {
       window.alert('No earthquakes found for the location.');
     }
-  };
+    
+  }
   
   //Public Functions
   return {
     init: function() {
       
       // Initialize map object
-      mapCtrl.initMap(document.getElementById('map'), {
+      mapCtrl.init (placeChanged, {
           center: {lat: -34.397, lng: 150.644},
           zoom: 8
-      });
-      
-      // Initialize autocomplete object
-      mapCtrl.initAutocomplete(document.getElementById('pac-input'), placeChanged);      
+      });   
       
     }
   };

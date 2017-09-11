@@ -74,14 +74,18 @@ var mapController = (function() {
       var safeParams = strongParams(params);
       var elems = getElements();
       
-      // Initialize map Object
-      map = new google.maps.Map(elems.map, safeParams);
-      
-      // Initialize Autocomplete
-      map.controls[google.maps.ControlPosition.TOP_LEFT].push(elems.autocomplete);
-      autocomplete = new google.maps.places.Autocomplete(elems.autocomplete);
-      autocomplete.bindTo('bounds', map);
-      autocomplete.addListener('place_changed', callback);
+      if(!map){
+        // Initialize map Object
+        map = new google.maps.Map(elems.map, safeParams);
+
+        // Initialize Autocomplete
+        map.controls[google.maps.ControlPosition.TOP_LEFT].push(elems.autocomplete);
+        autocomplete = new google.maps.places.Autocomplete(elems.autocomplete);
+        autocomplete.bindTo('bounds', map);
+        autocomplete.addListener('place_changed', callback);
+      } else {
+        window.alert("Map has already been initialized");
+      }
     },
     
     getPlace: function() {

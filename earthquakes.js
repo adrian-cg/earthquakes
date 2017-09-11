@@ -48,12 +48,24 @@ var geoNamesController = (function() {
 // Controller for Map Object
 var mapController = (function() {
   var map;
-  var autocomplete;  
+  var autocomplete;
+  
+  function strongParams(params) {
+    var center = params.center || {lat: -34.397, lng: 150.644};
+    var zoom = params.zoom || 8;
+    
+    return {
+      center: center,
+      zoom: zoom
+    };
+  }
   
   //Public Functions
   return {
     initMap: function(element, params) {
-      map = new google.maps.Map(element, params);
+      var safeParams = strongParams(params);
+      console.log(safeParams);
+      map = new google.maps.Map(element, safeParams);
     },
 
     initAutocomplete: function(element, callback) {

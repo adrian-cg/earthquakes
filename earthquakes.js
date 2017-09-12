@@ -1,15 +1,15 @@
 // Controller for Geonames data
 var geoNamesController = (function() {
-  const baseUrl = 'http://api.geonames.org/earthquakesJSON';
-  const username = 'adriancg';
+  const baseUrl = 'http://api.geonames.org/earthquakesJSON',
+        username = 'adriancg';
   
   function buildUrl(bounds) {
-    var north = '?north=' + bounds.north;
-    var south = '&south=' + bounds.south;
-    var east = '&east=' + bounds.east;
-    var west = '&west=' + bounds.west;
-    var uname = '&username=' + username;
-    var fullUrl = baseUrl + north + south + east + west + uname;
+    var north = '?north=' + bounds.north,
+        south = '&south=' + bounds.south,
+        east = '&east=' + bounds.east,
+        west = '&west=' + bounds.west,
+        uname = '&username=' + username,
+        fullUrl = baseUrl + north + south + east + west + uname;
     
     return fullUrl;
   }
@@ -23,7 +23,7 @@ var geoNamesController = (function() {
         if(xhttp.status === 200){
           resolve(JSON.parse(xhttp.response));
         } else {
-          reject(xttp.statusText);
+          reject(xhttp.statusText);
         }
       };
       
@@ -47,8 +47,8 @@ var geoNamesController = (function() {
 
 // Controller for Map Object
 var mapController = (function() {
-  var map;
-  var autocomplete;
+  var map, autocomplete;
+  var markers = [];
   
   function getElements() {
     return {
@@ -59,8 +59,8 @@ var mapController = (function() {
   
   // Only allow the public init function to set center and zoom.
   function strongParams(params) {
-    var center = params.center || {lat: -34.397, lng: 150.644};
-    var zoom = params.zoom || 8;
+    var center = params.center || {lat: 25.6866, lng: -100.3161},
+        zoom = params.zoom || 8;
     
     return {
       center: center,
@@ -68,11 +68,32 @@ var mapController = (function() {
     };
   }
   
+  function clearMarkers() {
+    markers.forEach(function(marker){
+      marker.setMap(null);
+    });
+    markers = [];
+  }
+  
+  function addMarker(pos, label, timeout){
+    window.setTimeout( function() {
+      
+      markers.push(new google.maps.Marker({
+        position: {lat: pos.lat, lng: pos.lng},
+        label: label,
+        map: map,
+        animation: google.maps.Animation.DROP
+      }));
+      
+    } , timeout);
+    
+  }
+  
   //Public Functions
   return {
     init: function(callback, params) {
-      var safeParams = strongParams(params);
-      var elems = getElements();
+      var safeParams = strongParams(params),
+          elems = getElements();
       
       if(!map){
         // Initialize map Object
@@ -81,18 +102,23 @@ var mapController = (function() {
         // Initialize Autocomplete
         map.controls[google.maps.ControlPosition.TOP_LEFT].push(elems.autocomplete);
         autocomplete = new google.maps.places.Autocomplete(elems.autocomplete);
-        autocomplete.bindTo('bounds', map);
+        //autocomplete.bindTo('bounds', map);
         autocomplete.addListener('place_changed', callback);
       } else {
         window.alert("Map has already been initialized");
       }
     },
     
-    getPlace: function() {
-      return autocomplete.getPlace();
-    },
     getBounds: function() {
-      var bounds = map.getBounds();
+      var bounds, place;
+      place = autocomplete.getPlace();
+      
+      if(place.geometry.viewport){
+        bounds = place.geometry.viewport;
+      } else {
+        bounds = map.getBounds;
+      }
+      
       return {
         north: bounds.f.f,
         south: bounds.f.b,
@@ -122,6 +148,19 @@ var mapController = (function() {
       }
             
       return 0;
+    },
+    
+    plotMarkers: function(markers) {
+      clearMarkers();
+      markers.forEach(function(marker, i){
+        
+        if(marker.lat && marker.lng) {
+          var position = {lat: marker.lat, lng: marker.lng};
+          addMarker(position, (i + 1).toString(), i*200); // Array index is used for labeling and setting animation timeout.  
+        }
+      
+      });
+      
     }
   };
   
@@ -152,8 +191,10 @@ var appController = (function(geoNamesCtrl, mapCtrl) {
     
     console.log(earthquakeData);
     var earthquakeArray = earthquakeData.earthquakes;
+    
     if(earthquakeArray.length > 0){
-      console.log("Plot earthquakes")
+      console.log("Plot earthquakes");
+      mapCtrl.plotMarkers(earthquakeArray);
     } else {
       window.alert('No earthquakes found for the location.');
     }
@@ -165,8 +206,8 @@ var appController = (function(geoNamesCtrl, mapCtrl) {
     init: function() {
       
       // Initialize map object
-      mapCtrl.init (placeChanged, {
-          center: {lat: -34.397, lng: 150.644},
+      mapCtrl.init(placeChanged, {
+          center: {lat: 25.6866, lng: -100.3161},
           zoom: 8
       });   
       

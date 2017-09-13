@@ -3,13 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <title>Recent Earthquakes</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
   <link rel="stylesheet" type="text/css" href="style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/es6-promise/4.1.1/es6-promise.auto.js"></script>
 </head>
 <body>
-  <h1>Recent Earthquakes</h1>
-  <input type="text" class="controls" id="pac-input" placeholder="Enter a Location">
-  <div id="map"></div>
+  <div class="header bg-primary text-white">
+    <div class="container">
+      <h4 class="display-4"><span class="align-middle">Recent Earthquakes</span></h4>
+    </div>
+  </div>
+  <div class="container">
+    <input type="text" class="controls" id="pac-input" placeholder="Enter a Location">
+    <div id="map"></div>
+    <div class="row">
+      <div class="col-md-6">
+        <div class="title">
+          <h3 class="text-primary">Results</h4>
+        </div>
+        <table class="table table-striped">
+          <thead>
+            <th>#</th>
+            <th>Date</th>
+            <th>Intensity</th>
+            <th>Lat</th>
+            <th>Lng</th>
+          </thead>
+          <tbody id="results">
+          </tbody>
+        </table>
+      </div>
+      <div class="col-md-6">
+        <div class="title">
+          <h3 class="text-primary">Top 10 Earthquakes</h4>
+        </div>
+        <table class="table table-striped">
+          <thead>
+            <th>#</th>
+            <th>Date</th>
+            <th>Intensity</th>
+            <th>Lat</th>
+            <th>Lng</th>
+          </thead>
+          <tbody id="top-ten">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
   <script type="text/javascript" src="earthquakes.js"></script>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDm8WvKMGa4-cyE7z94LbBZFd7HLvybJMQ&libraries=places&callback=appController.init"
     async defer></script>

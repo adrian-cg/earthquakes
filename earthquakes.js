@@ -1,4 +1,6 @@
-// Controller for Geonames data
+/**************************************************************
+* GEONAMES CONTROLLER - Makes WebService Calls to Retrieve Data
+**************************************************************/
 var geoNamesController = (function() {
   const baseUrl = 'http://api.geonames.org/earthquakesJSON',
         username = 'adriancg';
@@ -10,12 +12,13 @@ var geoNamesController = (function() {
         east = '&east=' + bounds.east,
         west = '&west=' + bounds.west,
         uname = '&username=' + username,
-        maxRows = maxRows ? '&maxRows=' + maxRows : '',
+        maxRows = maxRows ? '&maxRows=' + maxRows : '', // only add the maxRows parameter if it was passed
         fullUrl = baseUrl + north + south + east + west + maxRows + uname;
 
     return fullUrl;
   }
   
+  // Query function returns a promise object for Async processing
   function queryEarthquakes(url) {
     
     return new Promise(function(resolve, reject){
@@ -38,6 +41,7 @@ var geoNamesController = (function() {
     
   }
   
+// PUBLIC INTERFACE
   return {
     getEarthquakes: function(bounds, maxRows) { 
       var url = buildUrl(bounds, maxRows);
@@ -47,10 +51,15 @@ var geoNamesController = (function() {
 })();
 
 
-// Controller for Map Object
+/*****************************************
+* MAP CONTROLLER - Manipulate Map Object
+*****************************************/
 var mapController = (function() {
-  var map, autocomplete;
+  
+  var map, autocomplete; 
   var markers = [];
+  
+  // DOM elements for map and autocomplete objects
   var elems = {
     map: document.getElementById('map'),
     autocomplete: document.getElementById('pac-input')
@@ -58,6 +67,8 @@ var mapController = (function() {
   
   // Only allow the public init function to set center and zoom.
   function strongParams(params) {
+    
+    // Fefault values
     var center = params.center || {lat: 25.6866, lng: -100.3161},
         zoom = params.zoom || 8;
     
@@ -88,7 +99,7 @@ var mapController = (function() {
     
   }
   
-  //Public Functions
+ // PUBLIC INTERFACE
   return {
     init: function(callback, params) {
       var safeParams = strongParams(params);
@@ -107,6 +118,7 @@ var mapController = (function() {
       }
     },
     
+    // Get bounds of current location for GeoNames bounding box
     getBounds: function() {
       var bounds, place;
       place = autocomplete.getPlace();
@@ -126,6 +138,7 @@ var mapController = (function() {
       
     },
     
+    // Function that changes the displayed location to the one entered in the input field.
     changePlace: function() {
       
       var place = autocomplete.getPlace();
@@ -148,6 +161,7 @@ var mapController = (function() {
       return 0;
     },
     
+    // Takes an array of markers and plots them in the map.
     plotMarkers: function(markers) {
       clearMarkers();
       markers.forEach(function(marker, i){
@@ -161,20 +175,34 @@ var mapController = (function() {
       
     },
     
+    // Show the entire world in the map.
     showAll: function() {
       map.setCenter({lat:0, lng:0});
-      map.setZoom(2);
+      map.setZoom(2); // Zoom 2, doesn't strictly "show all" of the world, but it looks better than 1.
     }
   };
   
 })();
 
 
-// Application Controller
+/**********************************************************
+* APPLICATION CONTROLLER - Process and display Information
+**********************************************************/
+
 var appController = (function(geoNamesCtrl, mapCtrl) {
   
-  var topTen;
+  var topTen; // Used to store the top ten earthquakes once retrieved.
   
+  // Sort earthquakes by Magnitude desc, Date desc
+  function quakeSort(a,b){
+      if(a.magnitude > b.magnitude) return -1;
+      if(a.magnitude < b.magnitude) return 1;
+      if(a.datetime > b.datetime) return -1;
+      if(a.datetime < b.datetime) return 1;
+      return 0;      
+    }
+  
+  //Clear the rows for a table
   function clearRows(tbody) {
     
     while(tbody.firstChild) {
@@ -183,6 +211,7 @@ var appController = (function(geoNamesCtrl, mapCtrl) {
     
   }
   
+  // Displays earthquake data in any of the two tables in the page
   function displayResults(results, tbody){
     
     clearRows(tbody);
@@ -217,16 +246,14 @@ var appController = (function(geoNamesCtrl, mapCtrl) {
   }
   
   
-  /* Process Earthquake data: This function will return a function
-  that will be invoked by promise objects. The tbody_id paramenter is the id
-  of the table where the results will be displayed */
-  
+  // Processes the results from a GeoNames WS call
   function processEarthquakes(earthquakeData) {
     
     var earthquakeArray = earthquakeData.earthquakes,
         tbody = document.getElementById('results');
 
     if(earthquakeArray.length > 0){
+        earthquakeArray.sort(quakeSort);
         mapCtrl.plotMarkers(earthquakeArray);
         displayResults(earthquakeArray, tbody);
     } else {
@@ -235,6 +262,48 @@ var appController = (function(geoNamesCtrl, mapCtrl) {
     }
     
   }
+  
+  // Filters out the quakes and gets the strongest ten in the last year
+  // Dates are calculated and compared using moment.js library
+  function processTopQuakes(topQuakes) {
+    var topQuakesArray = topQuakes.earthquakes;
+    
+    // Remove earthquakes older than 1 year.
+    var filteredTopQuakes = topQuakesArray.filter(function(earthquake){
+      var date = moment(earthquake.datetime).format('YYYYMMDD');
+      return date >= moment().startOf('d').subtract(1, 'y').format('YYYYMMDD');
+    });
+    
+    topTen = filteredTopQuakes.slice(0,10);
+    topTen.sort(quakeSort);
+    displayResults(topTen, document.getElementById('top-ten'));
+    
+    // Since the data has now been retrieved, we can enable the functionality of the plot button.
+    document.getElementById('top-ten-btn').addEventListener('click', topTenPlot);
+    
+  }
+  
+  // Gets a list of the top earthquakes in the world
+  function getTopTen() {
+    
+    var topQuakes = geoNamesCtrl.getEarthquakes({ north: 90, 
+                                               south: -90, 
+                                               west: -180, 
+                                               east: 180
+                                             }, 500);
+    
+    topQuakes.then(processTopQuakes).catch(function(error){
+      window.alert(error);
+    });
+    
+  }  
+
+  
+  function topTenPlot () {
+    mapCtrl.showAll();
+    mapCtrl.plotMarkers(topTen);
+  }
+  
   
   // Function that will run when a new location is entered
   function placeChanged() {
@@ -251,54 +320,9 @@ var appController = (function(geoNamesCtrl, mapCtrl) {
       });
     }
     
-  }
-  
-  function getTopTen() {
-    
-    var todayStr = moment().format('YYYY-MM-DD');
-    var topQuakes = geoNamesCtrl.getEarthquakes({ north: 90, 
-                                               south: -90, 
-                                               west: -180, 
-                                               east: 180
-                                             }, 500);
-    
-    topQuakes.then(processTopQuakes).catch(function(error){
-      window.alert(error);
-    });
-    
-  }
-  
-  function processTopQuakes(topQuakes) {
-    var topQuakesArray = topQuakes.earthquakes;
-    
-    // Remove earthquakes older than 1 year.
-    var filteredTopQuakes = topQuakesArray.filter(function(earthquake){
-      var date = moment(earthquake.datetime).format('YYYYMMDD');
-      return date >= moment().startOf('d').subtract(1, 'y').format('YYYYMMDD');
-    });
-    
-    topTen = filteredTopQuakes.slice(0,10);
-       
-    //Sort by magnitude desc, date desc
-    topTen.sort(function(a,b){
-      if(a.magnitude > b.magnitude) return -1;
-      if(a.magnitude < b.magnitude) return 1;
-      if(a.datetime > b.datetime) return -1;
-      if(a.datetime < b.datetime) return 1;
-      return 0;      
-    });
-    
-    displayResults(topTen, document.getElementById('top-ten'));
-    document.getElementById('top-ten-btn').addEventListener('click', topTenPlot);
-    
-  }
-  
-  function topTenPlot () {
-    mapCtrl.showAll();
-    mapCtrl.plotMarkers(topTen);
-  }
-  
-  //Public Functions
+  }  
+
+  //PUBLIC INTERFACE
   return {
     init: function() {
       

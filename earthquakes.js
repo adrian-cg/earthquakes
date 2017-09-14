@@ -60,7 +60,7 @@ var mapController = (function() {
   var markers = [];
   
   // DOM elements for map and autocomplete objects
-  var elems = {
+  var mapDOM = {
     map: document.getElementById('map'),
     autocomplete: document.getElementById('pac-input')
   };
@@ -106,11 +106,11 @@ var mapController = (function() {
       
       if(!map){
         // Initialize map Object
-        map = new google.maps.Map(elems.map, safeParams);
+        map = new google.maps.Map(mapDOM.map, safeParams);
 
         // Initialize Autocomplete
-        map.controls[google.maps.ControlPosition.TOP_LEFT].push(elems.autocomplete);
-        autocomplete = new google.maps.places.Autocomplete(elems.autocomplete);
+        map.controls[google.maps.ControlPosition.TOP_LEFT].push(mapDOM.autocomplete);
+        autocomplete = new google.maps.places.Autocomplete(mapDOM.autocomplete);
         //autocomplete.bindTo('bounds', map);
         autocomplete.addListener('place_changed', callback);
       } else {
@@ -193,6 +193,13 @@ var appController = (function(geoNamesCtrl, mapCtrl) {
   
   var topTen; // Used to store the top ten earthquakes once retrieved.
   
+  // DOM elements for application
+  var appDOM = {
+    results: document.getElementById('results'),
+    topTen: document.getElementById('top-ten'),
+    plotBtn: document.getElementById('top-ten-btn')
+  }
+  
   // Sort earthquakes by Magnitude desc, Date desc
   function quakeSort(a,b){
       if(a.magnitude > b.magnitude) return -1;
@@ -249,13 +256,12 @@ var appController = (function(geoNamesCtrl, mapCtrl) {
   // Processes the results from a GeoNames WS call
   function processEarthquakes(earthquakeData) {
     
-    var earthquakeArray = earthquakeData.earthquakes,
-        tbody = document.getElementById('results');
+    var earthquakeArray = earthquakeData.earthquakes;
 
     if(earthquakeArray.length > 0){
         earthquakeArray.sort(quakeSort);
         mapCtrl.plotMarkers(earthquakeArray);
-        displayResults(earthquakeArray, tbody);
+        displayResults(earthquakeArray, appDOM.results);
     } else {
         window.alert('No earthquakes found.');
         clearRows(tbody);
@@ -276,10 +282,10 @@ var appController = (function(geoNamesCtrl, mapCtrl) {
     
     topTen = filteredTopQuakes.slice(0,10);
     topTen.sort(quakeSort);
-    displayResults(topTen, document.getElementById('top-ten'));
+    displayResults(topTen, appDOM.topTen);
     
     // Since the data has now been retrieved, we can enable the functionality of the plot button.
-    document.getElementById('top-ten-btn').addEventListener('click', topTenPlot);
+    appDOM.plotBtn.addEventListener('click', topTenPlot);
     
   }
   
@@ -300,6 +306,7 @@ var appController = (function(geoNamesCtrl, mapCtrl) {
 
   
   function topTenPlot () {
+    clearRows(appDOM.results);
     mapCtrl.showAll();
     mapCtrl.plotMarkers(topTen);
   }

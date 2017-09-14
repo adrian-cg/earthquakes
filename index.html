@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
   <link rel="stylesheet" type="text/css" href="style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/es6-promise/4.1.1/es6-promise.auto.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
 </head>
 <body>
   <div class="header bg-primary text-white">
@@ -18,14 +19,14 @@
     <div id="map"></div>
     <div class="row">
       <div class="col-md-6">
-        <div class="title">
-          <h3 class="text-primary">Results</h4>
+        <div class="title text-primary">
+          Results
         </div>
         <table class="table table-striped">
           <thead>
             <th>#</th>
             <th>Date</th>
-            <th>Intensity</th>
+            <th>Magnitude</th>
             <th>Lat</th>
             <th>Lng</th>
           </thead>
@@ -34,14 +35,15 @@
         </table>
       </div>
       <div class="col-md-6">
-        <div class="title">
-          <h3 class="text-primary">Top 10 Earthquakes</h4>
+        <div class="title text-primary">
+          Top 10 Earthquakes
+          <a class='btn btn-primary' href="#" id="top-ten-btn">Plot</a>
         </div>
         <table class="table table-striped">
           <thead>
             <th>#</th>
             <th>Date</th>
-            <th>Intensity</th>
+            <th>Magnitude</th>
             <th>Lat</th>
             <th>Lng</th>
           </thead>
